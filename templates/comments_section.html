@@ -1,0 +1,198 @@
+<div class="comments-container">
+    <h3>Комментарии ({{ comments|length }})</h3>
+
+    <!-- Форма для комментариев -->
+    {% if session.user_id %}
+        <form action="{{ url_for('add_comment') }}" method="POST" class="comment-form">
+            <input type="hidden" name="page" value="comments">
+            <textarea name="text" placeholder="Оставьте ваш комментарий..." required></textarea>
+            <button type="submit">
+                <i class="fas fa-paper-plane"></i> Отправить комментарий
+            </button>
+        </form>
+    {% else %}
+        <div class="login-prompt">
+            <p>Чтобы оставлять комментарии, пожалуйста, <a href="{{ url_for('social_login') }}">войдите через социальные сети</a>.</p>
+            <p style="color: #888; margin-top: 10px; font-size: 14px;">
+                <i class="fas fa-info-circle"></i> Авторизация через VK или Telegram
+            </p>
+        </div>
+    {% endif %}
+
+    <!-- Список комментариев -->
+    {% if session.user_id %}
+    <div class="comments-list">
+        {% if comments %}
+            {% for comment in comments %}
+                <div class="comment" id="comment-{{ comment.id }}">
+                    <div class="comment-header">
+                        <div class="comment-author">
+                            {% if comment.author.avatar %}
+                                <img src="{{ url_for('static', filename='images/' + comment.author.avatar) }}"
+                                     alt="{{ comment.author.nickname }}"
+                                     class="comment-avatar">
+                            {% else %}
+                                <div class="comment-avatar" style="background: #4a90e2; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <div class="author-name">{{ comment.author.nickname }}</div>
+                                <div class="comment-date">{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+                            </div>
+                        </div>
+                        {% if session.user_id == comment.user_id %}
+                            <form action="{{ url_for('delete_comment', comment_id=comment.id) }}"
+                                  method="POST"
+                                  onsubmit="return confirm('Удалить комментарий?')"
+                                  style="display: inline;">
+                                <button type="submit" class="delete-comment-btn">
+                                    <i class="fas fa-trash"></i> Удалить
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    <p class="comment-text">{{ comment.text }}</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-comments">
+                <i class="far fa-comment-dots" style="font-size: 48px; color: #444; margin-bottom: 15px;"></i>
+                <p>Пока нет комментариев. Будьте первым!</p>
+            </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .comments-container {
+        margin-top: 40px;
+        padding: 30px;
+        background: #1a1a1a;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+
+    .comment-form {
+        margin-bottom: 40px;
+    }
+
+    .comment-form textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 15px;
+        background: #0d0d0d;
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 16px;
+        resize: vertical;
+        margin-bottom: 15px;
+    }
+
+    .comment-form textarea:focus {
+        outline: none;
+        border-color: #4a90e2;
+    }
+
+    .comment-form button {
+        background: linear-gradient(45deg, #4a90e2, #357ae8);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .comment-form button:hover {
+        background: linear-gradient(45deg, #357ae8, #2a65c4);
+        transform: translateY(-2px);
+    }
+
+    .comment {
+        background: #222;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #4a90e2;
+    }
+
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .comment-author {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .comment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .author-name {
+        font-weight: bold;
+        color: #4a90e2;
+    }
+
+    .comment-date {
+        color: #888;
+        font-size: 14px;
+    }
+
+    .comment-text {
+        color: #ddd;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .delete-comment-btn {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 5px 10px;
+        border-radius: 5px;
+        transition: background 0.3s;
+    }
+
+    .delete-comment-btn:hover {
+        background: rgba(220, 53, 69, 0.1);
+    }
+
+    .no-comments {
+        text-align: center;
+        color: #888;
+        padding: 40px;
+        font-style: italic;
+    }
+
+    .login-prompt {
+        text-align: center;
+        padding: 30px;
+        background: #222;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+
+    .login-prompt a {
+        color: #4a90e2;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .login-prompt a:hover {
+        text-decoration: underline;
+    }
+</style>

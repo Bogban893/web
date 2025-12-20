@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+
+{% block navigation %}
+<a href="{{ url_for('index') }}">Главная</a>
+<a href="{{ url_for('comments') }}">Комментарии</a>
+{% endblock %}
+
+{% block auth_buttons %}
+<!-- Пустой блок - на странице входа не нужна кнопка входа -->
+{% endblock %}
+
+{% block side_icons %}
+<div class="side-icons hidden" id="side-icons"></div>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2 class="social-login-title">Вход через социальные сети</h2>
+
+    <div class="social-buttons">
+        <!-- Заменили VK на Яндекс -->
+        <a href="{{ url_for('auth_yandex') }}" class="social-btn yandex">
+            <i class="fab fa-yandex social-icon"></i>
+            <span>Войти через Яндекс</span>
+        </a>
+
+        <a href="{{ url_for('auth_telegram') }}" class="social-btn telegram">
+            <i class="fab fa-telegram social-icon"></i>
+            <span>Войти через Telegram</span>
+        </a>
+    </div>
+
+    <div class="divider">
+        <span>=^._.^= ∫</span>
+    </div>
+
+    <p style="text-align: center; margin-top: 15px; color: #bbb; font-size: 12px;">
+    Регистрируясь, вы соглашаетесь с <a href="{{ url_for('consent') }}" style="color: #4a90e2;">политикой конфиденциальности</a>
+</div>
+{% endblock %}

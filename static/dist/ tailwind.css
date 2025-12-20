@@ -1,0 +1,68 @@
+/* Минимальный набор Tailwind классов */
+.bg-gray-900 { background-color: #111827; }
+.bg-gray-800 { background-color: #1f2937; }
+.bg-blue-500 { background-color: #3b82f6; }
+.bg-blue-700 { background-color: #1d4ed8; }
+
+.text-gray-100 { color: #f3f4f6; }
+.text-gray-300 { color: #d1d5db; }
+.text-gray-500 { color: #6b7280; }
+.text-white { color: #ffffff; }
+
+.border-gray-700 { border-color: #374151; }
+.border-b { border-bottom-width: 1px; }
+.border-t { border-top-width: 1px; }
+
+.hover\\:bg-blue-700:hover { background-color: #1d4ed8; }
+.hover\\:text-white:hover { color: #ffffff; }
+
+.font-bold { font-weight: 700; }
+.font-medium { font-weight: 500; }
+
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.p-3 { padding: 0.75rem; }
+.p-6 { padding: 1.5rem; }
+
+.rounded { border-radius: 0.25rem; }
+.rounded-lg { border-radius: 0.5rem; }
+
+.container { width: 100%; }
+@media (min-width: 640px) { .container { max-width: 640px; } }
+@media (min-width: 768px) { .container { max-width: 768px; } }
+@media (min-width: 1024px) { .container { max-width: 1024px; } }
+@media (min-width: 1280px) { .container { max-width: 1280px; } }
+
+.mx-auto { margin-left: auto; margin-right: auto; }
+
+.flex { display: flex; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.items-center { align-items: center; }
+
+.space-x-4 > * + * { margin-left: 1rem; }
+.space-x-6 > * + * { margin-left: 1.5rem; }
+
+.transition-colors { transition-property: color, background-color, border-color; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+
+.min-h-screen { min-height: 100vh; }
+
+/* Ваши анимации */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1.2s ease;
+}
+
+.animate-slide-in {
+  animation: slideIn 1s ease;
+}

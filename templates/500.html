@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Внутренняя ошибка сервера{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <h1>500</h1>
+    <p>Внутренняя ошибка сервера. Мы уже работаем над ее устранением.</p>
+    <a href="{{ url_for('index') }}" class="back-link">Вернуться на главную</a>
+</div>
+
+<style>
+    .error-container {
+        text-align: center;
+        padding: 100px 20px;
+    }
+
+    .error-container h1 {
+        font-size: 120px;
+        color: #e74c3c;
+        margin-bottom: 20px;
+    }
+
+    .error-container p {
+        font-size: 24px;
+        color: #bbb;
+        margin-bottom: 40px;
+    }
+
+    .back-link {
+        display: inline-block;
+        padding: 12px 30px;
+        background: #4a90e2;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: background 0.3s;
+    }
+
+    .back-link:hover {
+        background: #357ae8;
+    }
+</style>
+{% endblock %}
