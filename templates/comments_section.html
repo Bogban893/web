@@ -28,7 +28,10 @@
         <div class="comment" id="comment-{{ comment.id }}">
             <div class="comment-header">
                 <div class="comment-author">
-                    {% if comment.author.avatar %}
+                    {% if comment.author.avatar and (comment.author.avatar.startswith('http') or
+                    comment.author.avatar.startswith('/')) %}
+                    <img src="{{ comment.author.avatar }}" alt="{{ comment.author.nickname }}" class="comment-avatar">
+                    {% elif comment.author.avatar %}
                     <img src="{{ url_for('static', filename='images/' + comment.author.avatar) }}"
                         alt="{{ comment.author.nickname }}" class="comment-avatar">
                     {% else %}

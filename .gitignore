@@ -1,0 +1,32 @@
+# Виртуальное окружение
+venv/
+env/
+ENV/
+
+# Python кэш
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# БД
+*.db
+instance/
+
+# Окружение
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Логи
+*.log
+
+# Временные файлы
+.DS_Store

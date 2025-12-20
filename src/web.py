@@ -4,6 +4,12 @@ from datetime import datetime
 from functools import wraps
 import os
 import sys
+import requests
+from urllib.parse import urlencode
+from dotenv import load_dotenv
+
+# Загружаем переменные окружения
+load_dotenv()
 
 # Получаем путь к директории проекта
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,6 +24,14 @@ app = Flask(
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f'sqlite:///{os.path.join(project_root, "site.db")}')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Конфигурация Яндекс OAuth
+YANDEX_CLIENT_ID = os.getenv('YANDEX_CLIENT_ID')
+YANDEX_CLIENT_SECRET = os.getenv('YANDEX_CLIENT_SECRET')
+YANDEX_REDIRECT_URI = os.getenv('YANDEX_REDIRECT_URI', 'http://localhost:5000/auth/yandex/callback')
+YANDEX_OAUTH_AUTHORIZE_URL = 'https://oauth.yandex.com/authorize'
+YANDEX_OAUTH_TOKEN_URL = 'https://oauth.yandex.com/token'
+YANDEX_USER_INFO_URL = 'https://login.yandex.ru/info'
 
 # Инициализация БД
 from .dp import db, User, Comment
@@ -150,26 +164,103 @@ def auth_vk():
         db.session.add(user)
         db.session.commit()
 
-    session['user_id'] = user.id
-    session['user_nickname'] = user.nickname
-    session['user_avatar'] = user.avatar
-
-    flash('Вы успешно вошли через VK!', 'success')
-    return redirect(url_for('comments'))
-
-
 @app.route('/auth/yandex')
 def auth_yandex():
-    # Mock авторизация через Яндекс
-    user = User.query.filter_by(yandex_id='demo_yandex_user').first()
-    if not user:
-        user = User(
-            nickname='Yandex_User',
-            yandex_id='demo_yandex_user',
-            email='yandex_user@example.com',
-            avatar='default-avatar.png'
-        )
-        db.session.add(user)
+    """Перенаправляет на Яндекс для авторизации"""
+    params = {
+        'response_type': 'code',
+        'client_id': YANDEX_CLIENT_ID,
+        'redirect_uri': YANDEX_REDIRECT_URI,
+        'state': 'security_token',
+        'login_hint': ''
+    }
+    authorization_url = f"{YANDEX_OAUTH_AUTHORIZE_URL}?{urlencode(params)}"
+    return redirect(authorization_url)
+
+
+@app.route('/auth/yandex/callback')
+def auth_yandex_callback():
+    """Обработчик callback от Яндекса"""
+    code = request.args.get('code')
+    state = request.args.get('state')
+
+    if not code:
+        flash('Ошибка авторизации: код не получен', 'error')
+        return redirect(url_for('social_login'))
+
+    try:
+        # Получаем токен доступа
+        token_data = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'client_id': YANDEX_CLIENT_ID,
+            'client_secret': YANDEX_CLIENT_SECRET,
+        }
+        
+        token_response = requests.post(YANDEX_OAUTH_TOKEN_URL, data=token_data)
+        token_response.raise_for_status()
+        token_json = token_response.json()
+        access_token = token_json.get('access_token')
+
+        if not access_token:
+            flash('Ошибка получения токена доступа', 'error')
+            return redirect(url_for('social_login'))
+
+        # Получаем информацию о пользователе
+        headers = {
+            'Authorization': f'OAuth {access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        user_response = requests.get(YANDEX_USER_INFO_URL, headers=headers)
+        user_response.raise_for_status()
+        user_info = user_response.json()
+
+        yandex_id = user_info.get('id')
+        nickname = user_info.get('display_name') or user_info.get('login', 'Yandex User')
+        email = user_info.get('default_email', f'{yandex_id}@yandex.ru')
+        
+        # Получаем аватар
+        avatar_url = None
+        if 'default_avatar_id' in user_info:
+            avatar_url = f"https://avatars.yandex.net/get-yapic/{user_info['default_avatar_id']}/islands-200"
+
+        # Проверяем есть ли уже такой пользователь
+        user = User.query.filter_by(yandex_id=yandex_id).first()
+        
+        if not user:
+            # Создаем нового пользователя
+            user = User(
+                nickname=nickname,
+                yandex_id=yandex_id,
+                email=email,
+                avatar=avatar_url or 'default-avatar.png'
+            )
+            db.session.add(user)
+            db.session.commit()
+            print(f"[INFO] Создан новый пользователь Яндекса: {nickname}")
+        else:
+            # Обновляем информацию пользователя
+            user.nickname = nickname
+            user.email = email
+            if avatar_url:
+                user.avatar = avatar_url
+            db.session.commit()
+            print(f"[INFO] Обновлены данные пользователя Яндекса: {nickname}")
+
+        # Устанавливаем сессию
+        session['user_id'] = user.id
+        session['user_nickname'] = user.nickname
+        session['user_avatar'] = user.avatar
+        session['user_email'] = user.email
+
+        flash(f'Вы успешно вошли как {nickname}!', 'success')
+        return redirect(url_for('comments'))
+
+    except requests.RequestException as e:
+        print(f"[ERROR] Ошибка при авторизации через Яндекс: {e}")
+        flash('Ошибка при авторизации через Яндекс', 'error')
+        return redirect(url_for('social_login'))
         db.session.commit()
 
     session['user_id'] = user.id
