@@ -16,14 +16,10 @@
 
 {% block side_icons %}
 <div class="side-icons visible" id="side-icons">
-    <a href="https://github.com/Bogban893" target="_blank"
-       class="side-icon github pulse"
-       data-tooltip="Мой GitHub">
+    <a href="https://github.com/Bogban893" target="_blank" class="side-icon github pulse" data-tooltip="Мой GitHub">
         <img src="{{ url_for('static', filename='images/github-logo.gif') }}" alt="GitHub">
     </a>
-    <a href="https://t.me/Bogdan4ky" target="_blank"
-       class="side-icon telegram"
-       data-tooltip="Telegram">
+    <a href="https://t.me/Bogdan4ky" target="_blank" class="side-icon telegram" data-tooltip="Telegram">
         <img src="{{ url_for('static', filename='images/telegram.gif') }}" alt="Telegram">
     </a>
 </div>
@@ -34,12 +30,8 @@
     <div class="card">
         <div class="photo-container">
             <!-- Изменено: id для фото, чтобы можно было обновлять через JS -->
-            <img id="profile-photo"
-                 src="{{ url_for('static', filename='images/me.png') }}"
-                 alt="Фото Filichkin Bogdan"
-                 class="photo"
-                 width="200"
-                 height="200">
+            <img id="profile-photo" src="{{ url_for('static', filename='images/me.png') }}" alt="Фото Filichkin Bogdan"
+                class="photo" width="200" height="200">
         </div>
         <div class="card-content">
             <h1 id="animated-name">Филичкин Богдан</h1>
@@ -265,7 +257,7 @@
             }
 
             // Обработчик зажатия мыши
-            photo.addEventListener('mousedown', function(e) {
+            photo.addEventListener('mousedown', function (e) {
                 e.preventDefault();
                 isMouseDown = true;
 
@@ -289,7 +281,7 @@
             });
 
             // Для мобильных устройств
-            photo.addEventListener('touchstart', function(e) {
+            photo.addEventListener('touchstart', function (e) {
                 e.preventDefault();
                 isMouseDown = true;
 
@@ -326,7 +318,7 @@
             photo.addEventListener('touchcancel', stopChanging);
 
             // Быстрый клик для смены на следующее фото
-            photo.addEventListener('click', function(e) {
+            photo.addEventListener('click', function (e) {
                 // Проверяем, не было ли это частью долгого зажатия
                 if (!isMouseDown && !changeInterval && filteredAvatars.length > 1) {
                     changePhoto();
