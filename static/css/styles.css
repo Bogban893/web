@@ -398,6 +398,174 @@ body::before {
   border-color: rgba(220, 53, 69, 0.3);
 }
 
+/* Состояние "залайкано" */
+.like-btn.liked {
+  background: rgba(220, 53, 69, 0.2);
+  color: #ff4757;
+  border-color: rgba(220, 53, 69, 0.5);
+}
+
+.like-btn.liked i {
+  animation: heartBeat 0.3s ease-in-out;
+}
+
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* Кнопка показать/скрыть ответы */
+.toggle-replies-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #8a9bb2;
+  padding: 6px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-replies-btn:hover {
+  background: rgba(74, 144, 226, 0.1);
+  color: #4a90e2;
+  border-color: rgba(74, 144, 226, 0.3);
+}
+
+/* Раздел ответов */
+.replies-section {
+  margin-top: 20px;
+  margin-left: 65px;
+  border-left: 2px solid rgba(74, 144, 226, 0.3);
+  padding-left: 20px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+.replies-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+/* Элемент ответа */
+.reply-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 15px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.reply-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.reply-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.reply-author-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reply-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.reply-body {
+  margin-bottom: 10px;
+}
+
+.reply-body p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.reply-footer {
+  display: flex;
+  gap: 10px;
+}
+
+.reply-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Сообщение "нет ответов" */
+.no-replies {
+  text-align: center;
+  color: #8a9bb2;
+  font-size: 14px;
+  padding: 10px;
+  font-style: italic;
+}
+
+/* Форма ответа */
+.reply-form-container {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reply-form textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.reply-form textarea:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(74, 144, 226, 0.5);
+}
+
+.btn-small {
+  padding: 8px 16px;
+  font-size: 13px;
+  width: fit-content;
+}
+
 /* Состояние "пусто" */
 .empty-state {
   text-align: center;

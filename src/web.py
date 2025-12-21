@@ -34,7 +34,7 @@ YANDEX_OAUTH_TOKEN_URL = 'https://oauth.yandex.com/token'
 YANDEX_USER_INFO_URL = 'https://login.yandex.ru/info'
 
 # Инициализация БД
-from .dp import db, User, Comment
+from .dp import db, User, Comment, Like
 
 db.init_app(app)
 
@@ -319,6 +319,98 @@ def get_comments(page):
         })
 
     return jsonify(comments_list)
+
+
+# Лайк на комментарий
+@app.route('/api/comment/<int:comment_id>/like', methods=['POST'])
+@login_required
+def like_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    user_id = session['user_id']
+    
+    # Проверяем, уже ли пользователь лайкнул этот комментарий
+    existing_like = Like.query.filter_by(comment_id=comment_id, user_id=user_id).first()
+    
+    if existing_like:
+        # Удаляем лайк (дизлайк)
+        db.session.delete(existing_like)
+        db.session.commit()
+        liked = False
+    else:
+        # Добавляем лайк
+        like = Like(comment_id=comment_id, user_id=user_id)
+        db.session.add(like)
+        db.session.commit()
+        liked = True
+    
+    # Возвращаем количество лайков
+    likes_count = Like.query.filter_by(comment_id=comment_id).count()
+    
+    return jsonify({
+        'success': True,
+        'liked': liked,
+        'likes_count': likes_count
+    })
+
+
+# Добавление ответа на комментарий
+@app.route('/add_reply/<int:parent_id>', methods=['POST'])
+@login_required
+def add_reply(parent_id):
+    parent_comment = Comment.query.get_or_404(parent_id)
+    text = request.form.get('text', '').strip()
+    page = request.form.get('page', 'comments')
+    
+    if not text:
+        flash('Ответ не может быть пустым', 'error')
+        return redirect(url_for('comments'))
+    
+    # Создаем ответ
+    reply = Comment(
+        text=text,
+        page=page,
+        user_id=session['user_id'],
+        parent_id=parent_id
+    )
+    
+    try:
+        db.session.add(reply)
+        db.session.commit()
+        flash('Ответ успешно добавлен!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Ошибка при добавлении ответа', 'error')
+        app.logger.error(f"Error adding reply: {e}")
+    
+    return redirect(url_for('comments'))
+
+
+# API для получения ответов на комментарий
+@app.route('/api/comment/<int:comment_id>/replies')
+def get_comment_replies(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    replies = Comment.query.filter_by(parent_id=comment_id).order_by(Comment.created_at.asc()).all()
+    
+    replies_list = []
+    for reply in replies:
+        user = User.query.get(reply.user_id)
+        likes_count = Like.query.filter_by(comment_id=reply.id).count()
+        user_liked = False
+        if 'user_id' in session:
+            user_liked = Like.query.filter_by(comment_id=reply.id, user_id=session['user_id']).first() is not None
+        
+        replies_list.append({
+            'id': reply.id,
+            'text': reply.text,
+            'created_at': reply.created_at.strftime('%d.%m.%Y %H:%M'),
+            'author': user.nickname if user else 'Аноним',
+            'avatar': user.avatar if user else 'default-avatar.png',
+            'can_delete': 'user_id' in session and reply.user_id == session['user_id'],
+            'likes_count': likes_count,
+            'user_liked': user_liked
+        })
+    
+    return jsonify(replies_list)
 
 
 # Временная замена обработчиков ошибок

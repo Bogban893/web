@@ -76,9 +76,30 @@
 
                 <!-- Дополнительная информация -->
                 <div class="comment-footer">
-                    <button class="like-btn">
-                        <i class="far fa-heart"></i> <span>0</span>
+                    <button class="like-btn" onclick="toggleLike({{ comment.id }})">
+                        <i class="far fa-heart"></i> <span class="like-count" data-comment-id="{{ comment.id }}">0</span>
                     </button>
+                    <button class="toggle-replies-btn" onclick="toggleReplies({{ comment.id }})">
+                        <i class="fas fa-comments"></i> <span class="replies-count" data-comment-id="{{ comment.id }}">0</span>
+                    </button>
+                </div>
+
+                <!-- Раздел ответов (скрытый по умолчанию) -->
+                <div class="replies-section" id="replies-{{ comment.id }}" style="display: none;">
+                    <div class="replies-container" id="replies-list-{{ comment.id }}">
+                        <!-- Ответы будут загружены здесь через JS -->
+                    </div>
+
+                    {% if session.user_id %}
+                    <!-- Форма добавления ответа -->
+                    <div class="reply-form-container">
+                        <form action="{{ url_for('add_reply', parent_id=comment.id) }}" method="POST" class="reply-form">
+                            <input type="hidden" name="page" value="comments">
+                            <textarea name="text" placeholder="Напишите ответ..." rows="2" required></textarea>
+                            <button type="submit" class="btn-primary btn-small">Ответить</button>
+                        </form>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -194,3 +215,146 @@
 <div class="scroll-top-btn" onclick="scrollToComments()">
     <i class="fas fa-arrow-up"></i>
 </div>
+
+<script>
+// Функция для переключения лайка
+function toggleLike(commentId) {
+    {% if session.user_id %}
+    fetch(`/api/comment/${commentId}/like`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const likeCountElement = document.querySelector(`.like-count[data-comment-id="${commentId}"]`);
+            likeCountElement.textContent = data.likes_count;
+            
+            // Изменяем иконку сердца
+            const likeBtn = event.target.closest('.like-btn');
+            if (data.liked) {
+                likeBtn.classList.add('liked');
+            } else {
+                likeBtn.classList.remove('liked');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка при добавлении лайка:', error);
+        alert('Ошибка при добавлении лайка');
+    });
+    {% else %}
+    alert('Пожалуйста, войдите для добавления лайка');
+    window.location.href = '/social_login';
+    {% endif %}
+}
+
+// Функция для переключения видимости ответов
+function toggleReplies(commentId) {
+    const repliesSection = document.getElementById(`replies-${commentId}`);
+    const repliesList = document.getElementById(`replies-list-${commentId}`);
+    
+    if (repliesSection.style.display === 'none') {
+        repliesSection.style.display = 'block';
+        loadReplies(commentId);
+    } else {
+        repliesSection.style.display = 'none';
+    }
+}
+
+// Функция для загрузки ответов
+function loadReplies(commentId) {
+    fetch(`/api/comment/${commentId}/replies`)
+    .then(response => response.json())
+    .then(replies => {
+        const repliesList = document.getElementById(`replies-list-${commentId}`);
+        repliesList.innerHTML = '';
+        
+        if (replies.length === 0) {
+            repliesList.innerHTML = '<p class="no-replies">Пока нет ответов</p>';
+            return;
+        }
+        
+        replies.forEach(reply => {
+            const replyEl = createReplyElement(reply);
+            repliesList.appendChild(replyEl);
+        });
+    })
+    .catch(error => {
+        console.error('Ошибка при загрузке ответов:', error);
+    });
+}
+
+// Функция для создания элемента ответа
+function createReplyElement(reply) {
+    const div = document.createElement('div');
+    div.className = 'reply-item';
+    div.id = `comment-${reply.id}`;
+    
+    const avatarUrl = reply.avatar.startsWith('http') || reply.avatar.startsWith('/') 
+        ? reply.avatar 
+        : `/static/images/${reply.avatar}`;
+    
+    let deleteBtn = '';
+    if (reply.can_delete) {
+        deleteBtn = `
+            <form action="/delete_comment/${reply.id}" method="POST" class="delete-form" style="display: inline;">
+                <button type="submit" class="action-btn delete-btn" onclick="return confirm('Удалить ответ?')">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </form>
+        `;
+    }
+    
+    div.innerHTML = `
+        <div class="reply-header">
+            <div class="reply-author-info">
+                <img src="${avatarUrl}" alt="${reply.author}" class="avatar reply-avatar">
+                <div class="author-details">
+                    <div class="author-name">${reply.author}</div>
+                    <div class="comment-meta">
+                        <span class="comment-time">${reply.created_at}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="reply-actions">
+                ${deleteBtn}
+            </div>
+        </div>
+        <div class="reply-body">
+            <p>${reply.text}</p>
+        </div>
+        <div class="reply-footer">
+            <button class="like-btn ${reply.user_liked ? 'liked' : ''}" onclick="toggleLike(${reply.id})">
+                <i class="${reply.user_liked ? 'fas' : 'far'} fa-heart"></i> 
+                <span class="like-count" data-comment-id="${reply.id}">${reply.likes_count}</span>
+            </button>
+        </div>
+    `;
+    
+    return div;
+}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Загружаем счетчики для всех комментариев
+    const commentCards = document.querySelectorAll('.comment-card');
+    commentCards.forEach(card => {
+        const commentId = card.id.replace('comment-', '');
+        if (commentId) {
+            // Загружаем количество ответов
+            fetch(`/api/comment/${commentId}/replies`)
+                .then(response => response.json())
+                .then(replies => {
+                    const repliesCount = document.querySelector(`.replies-count[data-comment-id="${commentId}"]`);
+                    if (repliesCount) {
+                        repliesCount.textContent = replies.length;
+                    }
+                })
+                .catch(error => console.error('Ошибка при загрузке ответов:', error));
+        }
+    });
+});
+</script>

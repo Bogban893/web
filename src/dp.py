@@ -28,6 +28,23 @@ class Comment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     page = db.Column(db.String(50), default='comments')  # для определения страницы
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)  # для ответов
+    
+    # Отношения
+    likes = db.relationship('Like', backref='comment', lazy=True, cascade='all, delete-orphan')
+    replies = db.relationship('Comment', backref=db.backref('parent', remote_side=[id]), lazy=True)
+
+
+class Like(db.Model):
+    __tablename__ = 'like'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Уникальность: один пользователь может лайкнуть комментарий только один раз
+    __table_args__ = (db.UniqueConstraint('comment_id', 'user_id', name='unique_like'),)
 
 
 def init_db(app):
