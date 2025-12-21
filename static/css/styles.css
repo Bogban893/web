@@ -1195,6 +1195,33 @@ nav a:hover::after {
   width: 100%;
 }
 
+/* Меню профиля (выпадающее) */
+.profile-menu {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  background: var(--background-card);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  padding: 8px 0;
+  z-index: 1100;
+  min-width: 180px;
+}
+
+.profile-menu-item {
+  display: block;
+  padding: 10px 16px;
+  color: var(--text-light);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.profile-menu-item:hover {
+  background: rgba(74, 144, 226, 0.08);
+  color: #fff;
+}
+
 /* ========== КОМПОНЕНТЫ СТРАНИЦ ========== */
 /* Профиль */
 .photo-container {
@@ -1283,12 +1310,12 @@ nav a:hover::after {
 }
 
 .info-section {
-  margin-bottom: 30px;
+  margin-bottom: 15px;
 }
 
 .info-section h2 {
   color: var(--primary-color);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1297,7 +1324,7 @@ nav a:hover::after {
 .separator {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 68, 68, 0.2), transparent);
-  margin: 30px 0;
+  margin: 15px 0;
 }
 
 /* Проекты */
@@ -1313,6 +1340,22 @@ nav a:hover::after {
   padding: 20px;
   border-radius: 10px;
   border-left: 4px solid rgba(74, 144, 226, 0.5);
+  display: block;
+  text-decoration: none;
+  color: #fff;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.project-card:hover {
+  background: rgba(74, 144, 226, 0.15);
+  border-left-color: rgba(74, 144, 226, 1);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(74, 144, 226, 0.2);
+}
+
+.project-card p {
+  color: #fff;
 }
 
 .project-card h3 {
@@ -1507,12 +1550,12 @@ nav a:hover::after {
 /* Боковые иконки */
 .side-icons {
   position: fixed;
-  top: 120px;
+  top: 90px;
   right: 20px;
   display: flex;
   flex-direction: column;
   gap: 15px;
-  z-index: 99;
+  z-index: 999;
 }
 
 .side-icon {

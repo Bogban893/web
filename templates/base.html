@@ -29,8 +29,33 @@
                     style="position: fixed; top: 10px; right: 80px; width: 20px; height: 20px; opacity: 0; cursor: pointer; z-index: 1000;"></span>
             </nav>
             <div class="auth-buttons">
+                {% if session.user_id %}
+                <!-- Профиль авторизованного пользователя -->
+                <div class="user-profile">
+                    {% set user = get_user(session.user_id) %}
+                    {% if user %}
+                    {% if user.avatar %}
+                    {% if user.avatar.startswith('http') or user.avatar.startswith('/') %}
+                    <img src="{{ user.avatar }}" alt="{{ user.nickname }}" class="profile-avatar"
+                        title="{{ user.nickname }}">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/' + user.avatar) }}" alt="{{ user.nickname }}"
+                        class="profile-avatar" title="{{ user.nickname }}">
+                    {% endif %}
+                    {% else %}
+                    <div class="profile-avatar-default" style="background: linear-gradient(135deg, #4a90e2, #8a2be2);"
+                        title="{{ user.nickname }}">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                <!-- Прямой клик по аватару выполняет выход и переход на страницу входа -->
+                {% else %}
+                <!-- Кнопка логина для неавторизованных -->
                 {% block auth_buttons %}
                 {% endblock %}
+                {% endif %}
             </div>
         </div>
     </header>
@@ -86,6 +111,16 @@
             if (isAdminMode) {
                 document.body.classList.add('admin-mode-active');
                 console.log('✅ Режим админа активен');
+            }
+
+            // Прямой клик по аватару: выйти и перейти на страницу входа/регистрации
+            const avatar = document.querySelector('.profile-avatar') || document.querySelector('.profile-avatar-default');
+            if (avatar) {
+                avatar.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Перейдём на /switch_account, маршрут очищает сессию и редиректит на /social_login
+                    window.location.href = '/switch_account';
+                });
             }
         });
     </script>

@@ -5,7 +5,7 @@ from functools import wraps
 import os
 import sys
 import requests
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from dotenv import load_dotenv
 
 # Загружаем переменные окружения
@@ -76,8 +76,8 @@ def index():
 
 @app.route('/comments')
 def comments():
-    # Получаем комментарии для страницы
-    comments_list = Comment.query.filter_by(page='comments').order_by(Comment.created_at.desc()).all()
+    # Получаем только основные комментарии (не ответы)
+    comments_list = Comment.query.filter_by(page='comments', parent_id=None).order_by(Comment.created_at.desc()).all()
     return render_template('comments_page.html', comments=comments_list)
 
 
@@ -140,6 +140,14 @@ def delete_comment(comment_id):
         return redirect(url_for('comments'))
 
     try:
+        # Если это основной комментарий (у которого нет parent_id), удаляем и все его ответы
+        if comment.parent_id is None:
+            # Удаляем все ответы на этот комментарий
+            replies = Comment.query.filter_by(parent_id=comment_id).all()
+            for reply in replies:
+                db.session.delete(reply)
+        
+        # Удаляем сам комментарий
         db.session.delete(comment)
         db.session.commit()
         flash('Комментарий удален', 'success')
@@ -168,7 +176,27 @@ def auth_vk():
 
 @app.route('/auth/yandex')
 def auth_yandex():
-    """Перенаправляет на Яндекс для авторизации"""
+    """Перенаправляет на Яндекс для авторизации.
+
+    Сохраняем в сессии целевой URL (если он безопасен), чтобы после
+    успешной авторизации вернуться на предыдущую страницу.
+    """
+    # Определяем куда вернуться после авторизации: сначала параметр next,
+    # затем Referer (если он с того же хоста).
+    next_url = request.args.get('next')
+    if not next_url:
+        ref = request.referrer
+        if ref:
+            parsed = urlparse(ref)
+            if parsed.netloc == request.host:
+                next_url = parsed.path or '/'
+                if parsed.query:
+                    next_url += '?' + parsed.query
+
+    # Сохраняем только относительные пути (без протокола/хоста)
+    if next_url and isinstance(next_url, str) and next_url.startswith('/'):
+        session['after_auth_redirect'] = next_url
+
     params = {
         'response_type': 'code',
         'client_id': YANDEX_CLIENT_ID,
@@ -257,7 +285,14 @@ def auth_yandex_callback():
         session['user_email'] = user.email
 
         flash(f'Вы успешно вошли как {nickname}!', 'success')
-        return redirect(url_for('comments'))
+
+        # Попытаемся перенаправить пользователя на сохранённую страницу
+        next_url = session.pop('after_auth_redirect', None)
+        if next_url and isinstance(next_url, str) and next_url.startswith('/'):
+            return redirect(next_url)
+
+        # По умолчанию возвращаем на главную
+        return redirect(url_for('index'))
 
     except requests.RequestException as e:
         print(f"[ERROR] Ошибка при авторизации через Яндекс: {e}")
@@ -270,7 +305,12 @@ def auth_yandex_callback():
     session['user_avatar'] = user.avatar
 
     flash('Вы успешно вошли через Яндекс!', 'success')
-    return redirect(url_for('comments'))
+
+    next_url = session.pop('after_auth_redirect', None)
+    if next_url and isinstance(next_url, str) and next_url.startswith('/'):
+        return redirect(next_url)
+
+    return redirect(url_for('index'))
 
 
 @app.route('/auth/telegram')
@@ -301,6 +341,13 @@ def logout():
     session.clear()
     flash('Вы успешно вышли из системы', 'info')
     return redirect(url_for('index'))
+
+
+# Переключение аккаунта: очищаем сессию и перенаправляем на страницу входа
+@app.route('/switch_account')
+def switch_account():
+    session.clear()
+    return redirect(url_for('social_login'))
 
 
 # API для получения комментариев
@@ -378,8 +425,10 @@ def add_reply(parent_id):
     page = request.form.get('page', 'comments')
     
     if not text:
-        flash('Ответ не может быть пустым', 'error')
-        return redirect(url_for('comments'))
+        return jsonify({
+            'success': False,
+            'error': 'Ответ не может быть пустым'
+        }), 400
     
     # Создаем ответ
     reply = Comment(
@@ -392,13 +441,30 @@ def add_reply(parent_id):
     try:
         db.session.add(reply)
         db.session.commit()
-        flash('Ответ успешно добавлен!', 'success')
+        
+        # Возвращаем JSON с данными ответа
+        user = User.query.get(reply.user_id)
+        return jsonify({
+            'success': True,
+            'reply': {
+                'id': reply.id,
+                'text': reply.text,
+                'created_at': reply.created_at.strftime('%d.%m.%Y %H:%M'),
+                'author': user.nickname if user else 'Аноним',
+                'avatar': user.avatar if user else 'default-avatar.png',
+                'can_delete': True,
+                'likes_count': 0,
+                'user_liked': False
+            },
+            'message': 'Ответ успешно добавлен!'
+        }), 201
     except Exception as e:
         db.session.rollback()
-        flash('Ошибка при добавлении ответа', 'error')
         app.logger.error(f"Error adding reply: {e}")
-    
-    return redirect(url_for('comments'))
+        return jsonify({
+            'success': False,
+            'error': 'Ошибка при добавлении ответа'
+        }), 500
 
 
 # API для получения ответов на комментарий
@@ -430,6 +496,15 @@ def get_comment_replies(comment_id):
 
 
 # Временная замена обработчиков ошибок
+# Контекст процессор для передачи функций в шаблоны
+@app.context_processor
+def inject_user():
+    def get_user(user_id):
+        if user_id:
+            return User.query.get(user_id)
+        return None
+    return dict(get_user=get_user)
+
 @app.errorhandler(404)
 def page_not_found(e):
     return "<h1>404 - Страница не найдена</h1><p><a href='/'>На главную</a></p>", 404

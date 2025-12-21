@@ -111,9 +111,7 @@
                     {% if session.user_id %}
                     <!-- Форма добавления ответа -->
                     <div class="reply-form-container">
-                        <form action="{{ url_for('add_reply', parent_id=comment.id) }}" method="POST"
-                            class="reply-form">
-                            <input type="hidden" name="page" value="comments">
+                        <form class="reply-form" onsubmit="submitReply(event, {{ comment.id }})">
                             <textarea name="text" placeholder="Напишите ответ..." rows="2" required></textarea>
                             <button type="submit" class="btn-primary btn-small">Ответить</button>
                         </form>
@@ -414,6 +412,64 @@
         }
         const parentInput = document.querySelector('input[name="parent_id"]');
         if (parentInput) parentInput.value = '';
+    }
+
+    // Отправка ответа через AJAX
+    function submitReply(event, parentId) {
+        event.preventDefault();
+
+        const form = event.target;
+        const textarea = form.querySelector('textarea');
+        const text = textarea.value.trim();
+
+        if (!text) {
+            alert('Ответ не может быть пустым');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('text', text);
+        formData.append('page', 'comments');
+
+        fetch(`/add_reply/${parentId}`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Очищаем поле
+                    textarea.value = '';
+                    textarea.style.height = '';
+
+                    // Добавляем новый ответ в список
+                    const replyList = document.getElementById(`replies-list-${parentId}`);
+                    if (replyList) {
+                        const replyEl = createReplyElement(data.reply);
+
+                        // Если был текст "Пока нет ответов", удаляем его
+                        const noReplies = replyList.querySelector('.no-replies');
+                        if (noReplies) noReplies.remove();
+
+                        replyList.appendChild(replyEl);
+                    }
+
+                    // Обновляем счётчик ответов
+                    const repliesCount = document.querySelector(`.replies-count[data-comment-id="${parentId}"]`);
+                    if (repliesCount) {
+                        repliesCount.textContent = parseInt(repliesCount.textContent) + 1;
+                    }
+
+                    console.log('✅ Ответ добавлен успешно');
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Не удалось добавить ответ'));
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при добавлении ответа:', error);
+                alert('Ошибка при добавлении ответа');
+            });
     }
 
     // Автоизменение высоты textarea
