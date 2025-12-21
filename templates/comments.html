@@ -1,135 +1,196 @@
-{% extends "base.html" %}
-
-{% block title %}=^._.^= ∫{% endblock %}
-
-{% block navigation %}
-<a href="{{ url_for('index') }}">Главная</a>
-{% endblock %}
-
-{% block auth_buttons %}
-{% endblock %}
-
-{% block side_icons %}
-<div class="side-icons hidden" id="side-icons"></div>
-{% endblock %}
-
-{% block content %}
-<div class="content">
-    <div class="page-header">
-        <h1>Комментарии</h1>
-        <p class="page-subtitle">Оставляйте ваши комментарии и мнения</p>
+<!-- comments_section.html -->
+<div class="comments-container" id="comments-section">
+    <div class="comments-header">
+        <h3><i class="fas fa-comments"></i> Комментарии ({{ comments|length }})</h3>
+        <div class="comments-stats">
+            {% if comments %}
+            <span class="stat"><i class="fas fa-users"></i> {{ comments|length }} участников</span>
+            <span class="stat"><i class="far fa-clock"></i> Последний {{ comments[-1].created_at.strftime('%H:%M')
+                }}</span>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="page-content">
+    <!-- СПИСОК КОММЕНТАРИЕВ -->
+    <div class="comments-list-wrapper">
+        <div class="comments-list">
+            {% if comments %}
+            {% for comment in comments %}
+            <div class="comment-card fade-in" id="comment-{{ comment.id }}">
+                <div class="comment-header">
+                    <div class="comment-author-info">
+                        <!-- Аватар -->
+                        <div class="avatar-wrapper">
+                            {% if comment.author.avatar %}
+                            {% if comment.author.avatar.startswith('http') or comment.author.avatar.startswith('/') %}
+                            <img src="{{ comment.author.avatar }}" alt="{{ comment.author.nickname }}" class="avatar">
+                            {% else %}
+                            <img src="{{ url_for('static', filename='images/' + comment.author.avatar) }}"
+                                alt="{{ comment.author.nickname }}" class="avatar">
+                            {% endif %}
+                            {% else %}
+                            <div class="avatar-default" style="background: linear-gradient(135deg, #4a90e2, #8a2be2);">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            {% endif %}
+                            <div class="online-indicator"></div>
+                        </div>
+
+                        <!-- Информация об авторе -->
+                        <div class="author-details">
+                            <div class="author-name">
+                                {{ comment.author.nickname }}
+                                {% if session.user_id == comment.user_id %}
+                                <span class="you-badge">Вы</span>
+                                {% endif %}
+                            </div>
+                            <div class="comment-meta">
+                                <span class="comment-time">{{ comment.created_at.strftime('%d.%m.%Y') }}</span>
+                                <span class="comment-time-separator">•</span>
+                                <span class="comment-time">{{ comment.created_at.strftime('%H:%M') }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Действия -->
+                    <div class="comment-actions">
+                        {% if session.user_id == comment.user_id %}
+                        <form action="{{ url_for('delete_comment', comment_id=comment.id) }}" method="POST"
+                            class="delete-form">
+                            <button type="submit" class="action-btn delete-btn"
+                                onclick="return confirm('Удалить комментарий?')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        <button class="action-btn reply-btn" onclick="replyTo('{{ comment.author.nickname }}')">
+                            <i class="fas fa-reply"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Текст комментария -->
+                <div class="comment-body">
+                    <p>{{ comment.text }}</p>
+                </div>
+
+                <!-- Дополнительная информация -->
+                <div class="comment-footer">
+                    <button class="like-btn">
+                        <i class="far fa-heart"></i> <span>0</span>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Состояние "нет комментариев" -->
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="far fa-comment-dots"></i>
+                </div>
+                <h4>Пока нет комментариев</h4>
+                <p>Будьте первым, кто оставит комментарий!</p>
+                <div class="empty-actions">
+                    <button class="btn-primary" onclick="document.querySelector('textarea').focus()">
+                        <i class="fas fa-pen"></i> Написать комментарий
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Индикатор загрузки (для AJAX) -->
+        <div class="loading-indicator" id="comments-loading">
+            <div class="spinner"></div>
+            <span>Загрузка комментариев...</span>
+        </div>
+    </div>
+
+    <!-- РАЗДЕЛИТЕЛЬ -->
+    <div class="section-divider">
+        <div class="divider-line"></div>
+        <div class="divider-text">
+            <i class="fas fa-pen-fancy"></i> НАПИСАТЬ КОММЕНТАРИЙ
+        </div>
+        <div class="divider-line"></div>
+    </div>
+
+    <!-- ФОРМА ДЛЯ ДОБАВЛЕНИЯ КОММЕНТАРИЯ -->
+    <div class="comment-form-container slide-up">
+        {% if session.user_id %}
+        <div class="form-header">
+            <h4><i class="fas fa-edit"></i> Новый комментарий</h4>
+            <div class="form-tips">
+                <span class="tip"><i class="fas fa-lightbulb"></i> Будьте вежливы и конструктивны</span>
+            </div>
+        </div>
+
+        <form action="{{ url_for('add_comment') }}" method="POST" class="comment-form" id="commentForm">
+            <input type="hidden" name="page" value="comments">
+
+            <!-- Поле ответа -->
+            <div class="reply-preview" id="replyPreview">
+                <span class="reply-to"></span>
+                <button type="button" class="close-reply" onclick="cancelReply()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Основное поле ввода -->
+            <div class="textarea-wrapper">
+                <textarea name="text" placeholder="Напишите ваш комментарий здесь..." rows="4" required
+                    oninput="autoResize(this)" id="commentTextarea"></textarea>
+                <div class="textarea-footer">
+                    <span class="char-count" id="charCount">0/1000</span>
+                    <div class="formatting-tips">
+                        <span class="format-hint"><i class="fas fa-code"></i> Поддерживается Markdown</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Кнопки отправки -->
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="clearForm()">
+                    <i class="fas fa-eraser"></i> Очистить
+                </button>
+                <button type="submit" class="btn-primary submit-btn">
+                    <i class="fas fa-paper-plane"></i> Отправить комментарий
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <!-- Сообщение для неавторизованных пользователей -->
+        <div class="auth-prompt">
+            <div class="auth-icon">
+                <i class="fas fa-lock"></i>
+            </div>
+            <div class="auth-content">
+                <h4>Требуется авторизация</h4>
+                <p>Чтобы оставлять комментарии, пожалуйста, войдите через социальные сети</p>
+
+                <div class="social-auth-buttons">
+                    <a href="{{ url_for('social_login', provider='yandex') }}" class="social-btn yandex">
+                        <i class="fab fa-yandex"></i> Яндекс
+                    </a>
+                    <a href="{{ url_for('social_login', provider='vk') }}" class="social-btn vk">
+                        <i class="fab fa-vk"></i> VK
+                    </a>
+                    <a href="{{ url_for('social_login', provider='telegram') }}" class="social-btn telegram">
+                        <i class="fab fa-telegram"></i> Telegram
+                    </a>
+                </div>
+
+                <div class="auth-note">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Мы не храним пароли, используется безопасная авторизация</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
-<!-- Отдельная секция комментариев -->
-{% include 'comments_section.html' %}
-
-<style>
-    .page-header {
-        margin-bottom: 40px;
-        text-align: center;
-    }
-
-    .page-subtitle {
-        color: #bbb;
-        font-size: 18px;
-        margin-top: 10px;
-    }
-
-    .page-content {
-        background: #1a1a1a;
-        padding: 30px;
-        border-radius: 12px;
-        margin-bottom: 30px;
-    }
-
-    .info-section {
-        margin-bottom: 30px;
-    }
-
-    .info-section h2 {
-        color: #4a90e2;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .projects-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
-    }
-
-    .project-card {
-        background: #222;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 4px solid rgba(74, 144, 226, 0.5);
-    }
-
-    .project-card h3 {
-        color: #fff;
-        margin-bottom: 10px;
-    }
-
-    .tech-tag {
-        display: inline-block;
-        background: rgba(74, 144, 226, 0.1);
-        color: #4a90e2;
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        margin-right: 8px;
-        margin-top: 10px;
-    }
-
-    .skills-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .skill {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 14px;
-        transition: all 0.3s;
-    }
-
-    .skill:hover {
-        background: rgba(74, 144, 226, 0.2);
-        transform: translateY(-2px);
-    }
-
-    .separator {
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255, 68, 68, 0.2), transparent);
-        margin: 30px 0;
-    }
-</style>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Автоматическое скрытие flash сообщений
-    setTimeout(() => {
-        const alerts = document.querySelectorAll('.alert, .flash');
-        alerts.forEach(alert => {
-            alert.style.transition = 'opacity 0.5s';
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.parentNode.removeChild(alert);
-                }
-            }, 500);
-        });
-    }, 5000);
-</script>
-{% endblock %}
+<!-- Кнопка "Наверх" для мобильных -->
+<div class="scroll-top-btn" onclick="scrollToComments()">
+    <i class="fas fa-arrow-up"></i>
+</div>

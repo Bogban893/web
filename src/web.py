@@ -78,7 +78,7 @@ def index():
 def comments():
     # Получаем комментарии для страницы
     comments_list = Comment.query.filter_by(page='comments').order_by(Comment.created_at.desc()).all()
-    return render_template('comments.html', comments=comments_list)
+    return render_template('comments_page.html', comments=comments_list)
 
 
 @app.route('/social_login')
