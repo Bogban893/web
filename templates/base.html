@@ -24,6 +24,9 @@
                 <a href="{{ url_for('index') }}">Главная</a>
                 <a href="{{ url_for('comments') }}">Комментарии</a>
                 {% endblock %}
+                <!-- Скрытая невидимая кнопка админа -->
+                <span id="admin-toggle-btn" onclick="toggleAdminMode()"
+                    style="position: fixed; top: 10px; right: 80px; width: 20px; height: 20px; opacity: 0; cursor: pointer; z-index: 1000;"></span>
             </nav>
             <div class="auth-buttons">
                 {% block auth_buttons %}
@@ -39,6 +42,53 @@
     </div>
 
     {% block scripts %}{% endblock %}
+
+    <script>
+        // Скрытая логика активации режима админа
+        let adminClickCount = 0;
+        let adminClickTimer = null;
+        const ADMIN_CLICK_THRESHOLD = 7;  // Количество кликов для активации
+        const ADMIN_CLICK_TIMEOUT = 2000; // Таймаут между кликами (мс)
+
+        // Глобальная функция для переключения режима админа
+        function toggleAdminMode() {
+            adminClickCount++;
+
+            // Очищаем старый таймер
+            if (adminClickTimer) clearTimeout(adminClickTimer);
+
+            // Если достаточно кликов - активируем режим админа
+            if (adminClickCount >= ADMIN_CLICK_THRESHOLD) {
+                activateAdminMode();
+                adminClickCount = 0;
+            } else {
+                // Устанавливаем таймер для сброса счётчика
+                adminClickTimer = setTimeout(() => {
+                    adminClickCount = 0;
+                }, ADMIN_CLICK_TIMEOUT);
+            }
+        }
+
+        function activateAdminMode() {
+            // Сохраняем флаг админа в sessionStorage
+            sessionStorage.setItem('isAdminMode', 'true');
+            console.log('🔓 Режим админа активирован!');
+            alert('Режим админа активирован!');
+            // Перезагружаем страницу, если на странице комментариев
+            if (window.location.pathname.includes('comments')) {
+                location.reload();
+            }
+        }
+
+        // Проверяем режим админа при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function () {
+            const isAdminMode = sessionStorage.getItem('isAdminMode') === 'true';
+            if (isAdminMode) {
+                document.body.classList.add('admin-mode-active');
+                console.log('✅ Режим админа активен');
+            }
+        });
+    </script>
 </body>
 
 </html>

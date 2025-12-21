@@ -132,8 +132,10 @@ def add_comment():
 def delete_comment(comment_id):
     comment = Comment.query.get_or_404(comment_id)
 
-    # Проверяем, что пользователь - владелец комментария
-    if comment.user_id != session['user_id']:
+    # Проверяем, что пользователь - владелец комментария или находится в режиме админа
+    is_admin_mode = request.form.get('admin_mode', 'false').lower() == 'true'
+    
+    if comment.user_id != session['user_id'] and not is_admin_mode:
         flash('Вы не можете удалить этот комментарий', 'error')
         return redirect(url_for('comments'))
 
@@ -309,13 +311,21 @@ def get_comments(page):
 
     for comment in comments:
         user = User.query.get(comment.user_id)
+        # Считаем лайки и проверяем, лайкнул ли текущий пользователь
+        likes_count = Like.query.filter_by(comment_id=comment.id).count()
+        user_liked = False
+        if 'user_id' in session:
+            user_liked = Like.query.filter_by(comment_id=comment.id, user_id=session['user_id']).first() is not None
+
         comments_list.append({
             'id': comment.id,
             'text': comment.text,
             'created_at': comment.created_at.strftime('%d.%m.%Y %H:%M'),
             'author': user.nickname if user else 'Аноним',
             'avatar': user.avatar if user else 'default-avatar.png',
-            'can_delete': 'user_id' in session and comment.user_id == session['user_id']
+            'can_delete': 'user_id' in session and comment.user_id == session['user_id'],
+            'likes_count': likes_count,
+            'user_liked': user_liked
         })
 
     return jsonify(comments_list)
@@ -327,6 +337,12 @@ def get_comments(page):
 def like_comment(comment_id):
     comment = Comment.query.get_or_404(comment_id)
     user_id = session['user_id']
+    # Запрещаем ставить лайки на ответы (комментарии с parent_id)
+    if comment.parent_id is not None:
+        return jsonify({
+            'success': False,
+            'error': 'Likes on replies are disabled'
+        }), 403
     
     # Проверяем, уже ли пользователь лайкнул этот комментарий
     existing_like = Like.query.filter_by(comment_id=comment_id, user_id=user_id).first()
