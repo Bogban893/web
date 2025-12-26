@@ -18,18 +18,17 @@
 
 {% block content %}
 <div class="auth-container">
-    <h2 class="social-login-title">Вход через социальные сети</h2>
+    <h2 class="social-login-title">Вход в аккаунт</h2>
 
     <div class="social-buttons">
-        <!-- Заменили VK на Яндекс -->
         <a href="{{ url_for('auth_yandex') }}" class="social-btn yandex">
             <i class="fab fa-yandex social-icon"></i>
             <span>Войти через Яндекс</span>
         </a>
 
-        <a href="{{ url_for('auth_telegram') }}" class="social-btn telegram">
-            <i class="fab fa-telegram social-icon"></i>
-            <span>Войти через Telegram</span>
+        <a href="{{ url_for('auth_google') }}" class="social-btn google">
+            <i class="fab fa-google social-icon"></i>
+            <span>Войти через Google</span>
         </a>
     </div>
 

@@ -10,7 +10,7 @@
 {% block auth_buttons %}
 <a href="{{ url_for('social_login') }}" class="social-login-btn social-main">
     <i class="fas fa-sign-in-alt"></i>
-    <span>Login</span>
+    <span>Вход</span>
 </a>
 {% endblock %}
 
@@ -29,7 +29,6 @@
 <div class="container">
     <div class="card">
         <div class="photo-container">
-            <!-- Изменено: id для фото, чтобы можно было обновлять через JS -->
             <img id="profile-photo" src="{{ url_for('static', filename='images/me.png') }}" alt="Фото Filichkin Bogdan"
                 class="photo" width="200" height="200">
         </div>
@@ -53,29 +52,63 @@
 
 <div class="content">
     <div class="page-header">
-        <h1>Мои творения</h1>
+        <h1>Мои проекты</h1>
+        <div class="cat-corner">
+            <span class="cat-emoji">😺</span>
+        </div>
     </div>
 
     <div class="page-content">
         <div class="info-section">
-            <h2><i class="fas fa-code"></i> Мои проекты</h2>
-            <div class="projects-grid">
-                <a href="https://github.com/spbu-coding-2024/graphs-graphs-team-9" target="_blank"
-                    rel="noopener noreferrer" class="project-card">
-                    <h3>Анализ графов</h3>
-                    <p>Десктопное приложение для создания, визуализации и анализа графов</p>
-                    <span class="tech-tag">Kotlin</span>
-                    <span class="tech-tag">Jetpack Compose for Desktop</span>
-                </a>
+            <div class="projects-list">
+                <!-- Проект 1 -->
+                <div class="project-row">
+                    <div class="project-info">
+                        <h3>Анализ графов</h3>
+                        <p>Десктопное приложение для создания, визуализации и анализа графов</p>
+                        <div class="tech-tags">
+                            <span class="tech-tag">Kotlin</span>
+                            <span class="tech-tag">Jetpack Compose for Desktop</span>
+                        </div>
+                    </div>
+                    <a href="https://github.com/spbu-coding-2024/graphs-graphs-team-9" target="_blank"
+                        class="project-link" rel="noopener noreferrer">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
 
-                <a href="/" target="_blank" rel="noopener noreferrer" class="project-card">
-                    <h3>Эта страничка =^_^= </h3>
-                    <p>Мой личный сайт с системой комментариев и авторизацией</p>
-                    <span class="tech-tag">Python</span>
-                    <span class="tech-tag">Flask</span>
-                    <span class="tech-tag">SQLite</span>
-                    <span class="tech-tag">CSS</span>
-                </a>
+                <!-- Проект 2 -->
+                <div class="project-row">
+                    <div class="project-info">
+                        <h3>Эта страничка =^_^= </h3>
+                        <p>Мой личный сайт с системой комментариев и авторизацией</p>
+                        <div class="tech-tags">
+                            <span class="tech-tag">Python</span>
+                            <span class="tech-tag">Flask</span>
+                            <span class="tech-tag">SQLite</span>
+                            <span class="tech-tag">CSS</span>
+                        </div>
+                    </div>
+                    <a href="/" class="project-link" rel="noopener noreferrer">
+                        <i class="fas fa-home"></i>
+                    </a>
+                </div>
+
+                <!-- Проект 3 - Моя курсовая -->
+                <div class="project-row">
+                    <div class="project-info">
+                        <h3>Моя курсовая работа</h3>
+                        <p>Изучение путей создания форматера для SystemVerilog</p>
+                        <div class="tech-tags">
+                            <span class="tech-tag">C++</span>
+                        </div>
+                    </div>
+                    <div class="project-status">
+                        <a href="https://docs.google.com/document/d/1o1OZ2DyvXEi3KtX0zenA20hSBjghRg0IFeB_fuw_Zy0/edit?tab=t.0#heading=h.vjp5juu79ev6"
+                            target="_blank" class="project-link" rel="noopener noreferrer">
+                            <i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -92,7 +125,6 @@
                 <span class="skill">Docker</span>
                 <span class="skill">Kotlin</span>
                 <span class="skill">C</span>
-
             </div>
         </div>
     </div>
@@ -105,12 +137,21 @@
         margin-bottom: 40px;
         text-align: center;
         margin-top: 40px;
+        position: relative;
+        padding-right: 60px;
     }
 
-    .page-subtitle {
-        color: #bbb;
-        font-size: 18px;
-        margin-top: 10px;
+    .cat-corner {
+        position: absolute;
+        top: -15px;
+        right: 0;
+        font-size: 32px;
+        animation: bounce 2s infinite;
+        cursor: pointer;
+    }
+
+    .cat-corner:hover {
+        animation: bounce 0.5s infinite;
     }
 
     .page-content {
@@ -132,34 +173,96 @@
         gap: 10px;
     }
 
-    .projects-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
+    .projects-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
 
-    .project-card {
+    .project-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
         background: #222;
         padding: 20px;
-        border-radius: 10px;
+        border-radius: 8px;
         border-left: 4px solid rgba(74, 144, 226, 0.5);
+        transition: all 0.3s ease;
     }
 
-    .project-card h3 {
+    .project-row:hover {
+        border-left: 4px solid #4a90e2;
+        transform: translateX(5px);
+        box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .project-info {
+        flex: 1;
+    }
+
+    .project-info h3 {
         color: #fff;
+        margin-bottom: 8px;
+        font-size: 1.3em;
+    }
+
+    .project-info p {
+        color: #bbb;
         margin-bottom: 10px;
+        line-height: 1.5;
+        font-size: 0.95em;
+    }
+
+    .tech-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 5px;
     }
 
     .tech-tag {
         display: inline-block;
         background: rgba(74, 144, 226, 0.1);
         color: #4a90e2;
-        padding: 5px 12px;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 11px;
+        border: 1px solid rgba(74, 144, 226, 0.3);
+    }
+
+    .project-link {
+        color: #4a90e2;
+        font-size: 18px;
+        margin-left: 20px;
+        padding: 8px;
+        border-radius: 50%;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+    }
+
+    .project-link:hover {
+        background: rgba(74, 144, 226, 0.1);
+        transform: scale(1.1);
+    }
+
+    .project-status {
+        margin-left: 20px;
+        display: flex;
+        align-items: center;
+    }
+
+    .status-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 6px 15px;
         border-radius: 20px;
         font-size: 12px;
-        margin-right: 8px;
-        margin-top: 10px;
+        font-weight: bold;
     }
 
     .skills-list {
@@ -186,6 +289,58 @@
         height: 1px;
         background: linear-gradient(90deg, transparent, rgba(255, 68, 68, 0.2), transparent);
         margin: 30px 0;
+    }
+
+    /* Анимация для котика */
+    @keyframes bounce {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    @keyframes wave {
+
+        0%,
+        100% {
+            transform: rotate(0deg);
+        }
+
+        25% {
+            transform: rotate(10deg);
+        }
+
+        75% {
+            transform: rotate(-10deg);
+        }
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .project-row {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .project-link,
+        .project-status {
+            margin-left: 0;
+            align-self: flex-end;
+        }
+
+        .page-header {
+            padding-right: 45px;
+        }
+
+        .cat-corner {
+            font-size: 24px;
+            top: -10px;
+        }
     }
 </style>
 <script>
@@ -219,18 +374,12 @@
         // Смена аватарки при зажатии
         const photo = document.getElementById('profile-photo');
         if (photo) {
-            // Массив ВСЕХ доступных фото (включая исходное)
-            // Убедитесь, что все эти файлы действительно существуют в папке static/images/
             const avatars = [
-                "{{ url_for('static', filename='images/me.png') }}",   // 1-е альтернативное
-                "{{ url_for('static', filename='images/me_1.png') }}", // 2-е альтернативное
-                "{{ url_for('static', filename='images/me_2.png') }}"  // 3-е альтернативное
+                "{{ url_for('static', filename='images/me.png') }}",
+                "{{ url_for('static', filename='images/me_1.png') }}",
+                "{{ url_for('static', filename='images/me_2.png') }}"
             ];
 
-            // Проверяем массив на пустые значения
-            console.log("Доступные фото:", avatars);
-
-            // Убираем пустые элементы из массива
             const filteredAvatars = avatars.filter(avatar => avatar && avatar.trim() !== '');
 
             if (filteredAvatars.length === 0) {
@@ -238,54 +387,21 @@
                 return;
             }
 
-            // Текущий индекс в массиве
             let currentAvatarIndex = 0;
             let isMouseDown = false;
             let mouseDownTimer = null;
             let changeInterval = null;
 
-            // Функция для смены фото
             function changePhoto() {
-                // Проверяем, есть ли фото в массиве
                 if (filteredAvatars.length === 0) return;
-
-                // Переходим к следующему фото по кругу
                 currentAvatarIndex = (currentAvatarIndex + 1) % filteredAvatars.length;
-
-                // Обновляем фото
                 photo.src = filteredAvatars[currentAvatarIndex];
-                console.log(`Текущее фото: ${currentAvatarIndex} - ${filteredAvatars[currentAvatarIndex]}`);
             }
 
-            // Обработчик зажатия мыши
             photo.addEventListener('mousedown', function (e) {
                 e.preventDefault();
                 isMouseDown = true;
 
-                // Начинаем смену фото после небольшой задержки
-                mouseDownTimer = setTimeout(() => {
-                    if (isMouseDown && filteredAvatars.length > 1) {
-                        // Меняем на следующее фото
-                        changePhoto();
-
-                        // Устанавливаем интервал для автоматической смены
-                        changeInterval = setInterval(() => {
-                            if (isMouseDown && filteredAvatars.length > 1) {
-                                changePhoto();
-                            } else if (!isMouseDown) {
-                                clearInterval(changeInterval);
-                                changeInterval = null;
-                            }
-                        }, 500);
-                    }
-                }, 100);
-            });
-
-            // Для мобильных устройств
-            photo.addEventListener('touchstart', function (e) {
-                e.preventDefault();
-                isMouseDown = true;
-
                 mouseDownTimer = setTimeout(() => {
                     if (isMouseDown && filteredAvatars.length > 1) {
                         changePhoto();
@@ -302,7 +418,6 @@
                 }, 100);
             });
 
-            // Останавливаем смену при отпускании
             function stopChanging() {
                 isMouseDown = false;
                 clearTimeout(mouseDownTimer);
@@ -312,23 +427,30 @@
                 }
             }
 
-            // События для остановки
             photo.addEventListener('mouseup', stopChanging);
             photo.addEventListener('mouseleave', stopChanging);
-            photo.addEventListener('touchend', stopChanging);
-            photo.addEventListener('touchcancel', stopChanging);
 
-            // Быстрый клик для смены на следующее фото
             photo.addEventListener('click', function (e) {
-                // Проверяем, не было ли это частью долгого зажатия
                 if (!isMouseDown && !changeInterval && filteredAvatars.length > 1) {
                     changePhoto();
                 }
             });
+        }
 
-            // Дебаг информация
-            console.log(`Всего фото: ${filteredAvatars.length}`);
-            console.log(`Первое фото: ${filteredAvatars[0]}`);
+        // Взаимодействие с котиком
+        const cat = document.querySelector('.cat-corner');
+        if (cat) {
+            cat.addEventListener('click', () => {
+                cat.style.animation = 'none';
+                cat.style.transform = 'scale(1.5)';
+                cat.style.transition = 'transform 0.3s ease';
+
+                setTimeout(() => {
+                    cat.style.transform = 'scale(1)';
+                    cat.style.animation = 'bounce 2s infinite';
+                    cat.style.transition = 'none';
+                }, 300);
+            });
         }
     });
 </script>

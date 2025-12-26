@@ -12,6 +12,7 @@ class User(db.Model):
     avatar = db.Column(db.String(200), default='default-avatar.png', nullable=False)
     vc_id = db.Column(db.String(100), nullable=True)
     tg_id = db.Column(db.String(100), nullable=True)
+    google_id = db.Column(db.String(100), nullable=True)
     yandex_id = db.Column(db.String(100), nullable=True)
     email = db.Column(db.String(120), unique=True, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

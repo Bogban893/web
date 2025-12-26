@@ -33,6 +33,20 @@ YANDEX_OAUTH_AUTHORIZE_URL = 'https://oauth.yandex.com/authorize'
 YANDEX_OAUTH_TOKEN_URL = 'https://oauth.yandex.com/token'
 YANDEX_USER_INFO_URL = 'https://login.yandex.ru/info'
 
+# Конфигурация Google OAuth
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:5000/auth/google/callback')
+GOOGLE_OAUTH_AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+GOOGLE_USER_INFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo'
+
+# Дебаг вывод конфигурации
+print("[DEBUG] Google OAuth Configuration:")
+print(f"  - CLIENT_ID: {GOOGLE_CLIENT_ID[:30]}..." if GOOGLE_CLIENT_ID else "  - CLIENT_ID: Not set")
+print(f"  - CLIENT_SECRET: {GOOGLE_CLIENT_SECRET[:10]}..." if GOOGLE_CLIENT_SECRET else "  - CLIENT_SECRET: Not set")
+print(f"  - REDIRECT_URI: {GOOGLE_REDIRECT_URI}")
+
 # Инициализация БД
 from .dp import db, User, Comment, Like
 
@@ -312,6 +326,148 @@ def auth_yandex_callback():
 
     return redirect(url_for('index'))
 
+
+@app.route('/auth/google')
+def auth_google():
+    """Перенаправляет пользователя на страницу авторизации Google."""
+    # Проверка конфигурации
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        print("[ERROR] Google OAuth не настроен! Отсутствуют CLIENT_ID или CLIENT_SECRET")
+        flash('Google авторизация не настроена на сервере', 'error')
+        return redirect(url_for('social_login'))
+    
+    next_url = request.args.get('next')
+    if not next_url:
+        ref = request.referrer
+        if ref:
+            parsed = urlparse(ref)
+            if parsed.netloc == request.host:
+                next_url = parsed.path or '/'
+                if parsed.query:
+                    next_url += '?' + parsed.query
+
+    if next_url and isinstance(next_url, str) and next_url.startswith('/'):
+        session['after_auth_redirect'] = next_url
+
+    params = {
+        'response_type': 'code',
+        'client_id': GOOGLE_CLIENT_ID,
+        'redirect_uri': GOOGLE_REDIRECT_URI,
+        'scope': 'openid email profile',
+        'access_type': 'offline',
+        'prompt': 'select_account'
+    }
+    authorization_url = f"{GOOGLE_OAUTH_AUTHORIZE_URL}?{urlencode(params)}"
+    print(f"[DEBUG] Перенаправляем на Google: {authorization_url[:100]}...")
+    return redirect(authorization_url)
+
+
+@app.route('/auth/google/callback')
+def auth_google_callback():
+    """Обработчик callback от Google OAuth2."""
+    code = request.args.get('code')
+    error = request.args.get('error')
+    
+    # Обработка ошибок от Google
+    if error:
+        error_description = request.args.get('error_description', error)
+        print(f"[ERROR] Google OAuth ошибка: {error} - {error_description}")
+        flash(f'Ошибка авторизации Google: {error_description}', 'error')
+        return redirect(url_for('social_login'))
+    
+    if not code:
+        print("[ERROR] Google callback: код авторизации не получен")
+        flash('Ошибка авторизации: код не получен', 'error')
+        return redirect(url_for('social_login'))
+
+    try:
+        print(f"[DEBUG] Получен код авторизации, обмениваем на токен...")
+        token_data = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'client_id': GOOGLE_CLIENT_ID,
+            'client_secret': GOOGLE_CLIENT_SECRET,
+            'redirect_uri': GOOGLE_REDIRECT_URI,
+        }
+
+        print(f"[DEBUG] Отправляем запрос к {GOOGLE_OAUTH_TOKEN_URL}")
+        token_response = requests.post(GOOGLE_OAUTH_TOKEN_URL, data=token_data)
+        
+        print(f"[DEBUG] Статус ответа: {token_response.status_code}")
+        print(f"[DEBUG] Содержание ответа: {token_response.text[:200]}")
+        
+        token_response.raise_for_status()
+        token_json = token_response.json()
+        access_token = token_json.get('access_token')
+
+        if not access_token:
+            print("[ERROR] Access token не получен из ответа Google")
+            flash('Ошибка получения токена доступа', 'error')
+            return redirect(url_for('social_login'))
+
+        print(f"[DEBUG] Получен access token, запрашиваем информацию пользователя...")
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Accept': 'application/json'
+        }
+
+        user_response = requests.get(GOOGLE_USER_INFO_URL, headers=headers)
+        user_response.raise_for_status()
+        user_info = user_response.json()
+        
+        print(f"[DEBUG] Информация пользователя: {user_info}")
+
+        google_id = user_info.get('sub') or user_info.get('id')
+        nickname = user_info.get('name') or user_info.get('given_name') or 'Google User'
+        email = user_info.get('email')
+        avatar_url = user_info.get('picture')
+
+        # Проверяем есть ли уже такой пользователь
+        user = None
+        if google_id:
+            user = User.query.filter_by(google_id=google_id).first()
+        if not user and email:
+            user = User.query.filter_by(email=email).first()
+
+        if not user:
+            user = User(
+                nickname=nickname,
+                google_id=google_id,
+                email=email,
+                avatar=avatar_url or 'default-avatar.png'
+            )
+            db.session.add(user)
+            db.session.commit()
+            print(f"[INFO] Создан новый пользователь Google: {nickname}")
+        else:
+            user.nickname = nickname
+            user.email = email or user.email
+            if avatar_url:
+                user.avatar = avatar_url
+            if google_id and not getattr(user, 'google_id', None):
+                user.google_id = google_id
+            db.session.commit()
+            print(f"[INFO] Обновлены данные пользователя Google: {nickname}")
+
+        session['user_id'] = user.id
+        session['user_nickname'] = user.nickname
+        session['user_avatar'] = user.avatar
+        session['user_email'] = user.email
+
+        flash(f'Вы успешно вошли как {nickname}!', 'success')
+
+        next_url = session.pop('after_auth_redirect', None)
+        if next_url and isinstance(next_url, str) and next_url.startswith('/'):
+            return redirect(next_url)
+
+        return redirect(url_for('index'))
+
+    except requests.RequestException as e:
+        print(f"[ERROR] Ошибка при авторизации через Google: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"[ERROR] Ответ сервера: {e.response.text}")
+        flash('Ошибка при авторизации через Google', 'error')
+        return redirect(url_for('social_login'))
 
 @app.route('/auth/telegram')
 def auth_telegram():

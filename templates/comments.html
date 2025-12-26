@@ -33,7 +33,6 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             {% endif %}
-                            <div class="online-indicator"></div>
                         </div>
 
                         <!-- Информация об авторе -->
@@ -196,11 +195,11 @@
                 <p>Чтобы оставлять комментарии, пожалуйста, войдите через социальные сети</p>
 
                 <div class="social-auth-buttons">
-                    <a href="{{ url_for('social_login', provider='yandex') }}" class="social-btn yandex">
+                    <a href="{{ url_for('social_login') }}" class="social-btn yandex">
                         <i class="fab fa-yandex"></i> Яндекс
                     </a>
-                    <a href="{{ url_for('social_login', provider='telegram') }}" class="social-btn telegram">
-                        <i class="fab fa-telegram"></i> Telegram
+                    <a href="{{ url_for('social_login') }}" class="social-btn google">
+                        <i class="fab fa-google"></i> Google
                     </a>
                 </div>
 
